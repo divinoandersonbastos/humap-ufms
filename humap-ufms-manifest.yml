@@ -1,0 +1,135 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: humap-ufms-10-66-0
+  name: humap-ufms-10-66-0
+  namespace: aghu-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: humap-ufms-10-66-0
+  template:
+    metadata:
+      labels:
+        run: humap-ufms-10-66-0
+    spec:
+      containers:
+      - env:
+        - name: AMBIENTE
+          value: dev
+        - name: TZ
+          value: America/Sao_Paulo
+        - name: client_id
+          value: e48a0d61-8001-4a65-96b3-b679ed017afc
+        - name: client_secret
+          value: M2UzZjIxMjAtZmFmZS00NmM2LWJiOWEtYmYwYWE2NDM3MTgw
+        - name: UNITARIZADORA_HOST
+        - name: UNITARIZADORA_USER
+        - name: UNITARIZADORA_PASSWORD
+        - name: UNITARIZADORA_LOCAL_FOLDER
+        - name: UNITARIZADORA_MNT_FOLDER
+        - name: UNITARIZADORA_ENVIRONMENT_FOLDER
+        - name: mail_session_host
+          value: mail.ebserh.gov.br
+        - name: parametros_email
+          value: aghu@ebserh.gov.br
+        - name: sistema_impressao_cups
+          value: "false"
+        - name: base_url_documentacao
+          value: /sistemica
+        - name: nro_tentativas_login_por_minuto
+          value: "3"
+        - name: logout_onunload
+          value: "true"
+        - name: identificar_host_remoto_por_ip
+          value: "false"
+        - name: business-layer-remote
+          value: "false"
+        - name: app_context_remote
+          value: aghu
+        - name: app_context
+          value: aghu
+        - name: aghu_default_color_theme
+          value: sete
+        - name: servidor_executa_quartz
+          value: "false"
+        - name: servidor_executa_quartz_exames
+          value: "false"
+        - name: WILDFLY_DB_USER
+          value: ugen_aghu
+        - name: WILDFLY_DB_PASSWORD
+          value: -55c6b1744a5e88a89a29a23dce6d664c
+        - name: QUARTZ_DB_USER
+          value: ugen_aghu
+        - name: QUARTZ_DB_PASSWORD
+          value: ugen_aghu
+        - name: mascara_quarto
+          value: '**********'
+        - name: mascara_leito
+          value: '****'
+        - name: SIGLA_HOSPITAL
+          value: humap-ufms
+        - name: app_validador_documentos_sigla_hospital
+          value: humap-ufms
+        - name: app_validador_documentos_url
+          value: http://homolog-validador-aghu.ebserh.gov.br/
+        - name: WILDFLY_DB_URL
+          value: jdbc:postgresql://172.17.62.50:6544/dbaghu_humap
+        - name: QUARTZ_DB_URL
+          value: jdbc:postgresql://172.17.62.50:6544/dbaghu_humap
+        - name: JAVA_OPTS
+          value: -server -XX:+UseCompressedOops -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
+            -Xms7g -Xmx7g -XshowSettings:vm -Djava.net.preferIPv4Stack=true -XX:+UseG1GC
+            -XX:MaxGCPauseMillis=1000 -XX:InitiatingHeapOccupancyPercent=30 -XX:G1ReservePercent=15
+            -Dorg.apache.el.parser.COERCE_TO_ZERO=false -Dorg.jboss.as.logging.per-deployment=false
+            -Dorg.jboss.resolver.warning=true -Djboss.modules.system.pkgs=org.jboss.byteman
+            -Djava.awt.headless=true -Djboss.remoting.pooled-buffers=false -agentlib:jdwp=transport=dt_socket,address=8787,server=y,suspend=n
+            -Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8 -Duser.language=pt -Duser.country=BR
+            -Duser.region=BR -Duser.timezone= -Djboss.as.management.blocking.timeout=600
+            -Dorg.jboss.boot.log.file=/opt/aghu/wildfly/standalone/log/server.log
+            -Dlogging.configuration=file:/opt/aghu/wildfly/standalone/configuration/logging.properties
+        image: harbor.ebserh.gov.br/aghu/aghu:10.66.0.dev.10009
+        imagePullPolicy: IfNotPresent
+        name: humap-ufms-10-66-0-dev-10009
+        ports:
+        - containerPort: 8080
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: harbor-aghu
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: service-humap-ufms
+  namespace: aghu-dev
+  labels:
+    run: humap-ufms-10-66-0
+spec:
+  selector:
+    run: humap-ufms-10-66-0
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: humap-dev-server-ingress
+  namespace: aghu-dev
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: humap-ufms-10-66-0-dev-10009.dev-aghu.ebserh.gov.br
+    http:
+      paths:
+      - path: /aghu
+        pathType: Prefix
+        backend:
+          service:
+            name: service-humap-ufms
+            port:
+              number: 8080
